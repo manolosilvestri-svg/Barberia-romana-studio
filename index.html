@@ -47,23 +47,20 @@
           <p class="text-sm font-medium">Tocca per caricare il video dal rullino</p>
           <p class="text-xs text-zinc-500 mt-1">MP4, MOV verticali (9:16)</p>
         </label>
-        <div class="flex items-center justify-between pt-2">
-          <label class="text-xs text-zinc-300 flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="autoTrimCheck" checked class="accent-white w-4 h-4" />
-            Taglio silenzi automatico (Smart Trim)
-          </label>
-          <span class="text-xs text-zinc-500">Soglia: -35dB</span>
-        </div>
       </div>
 
-      <!-- 2. Parlato & Sottotitoli + B-Roll IA -->
+      <!-- 2. Scelta Rapida Servizi Barberia & Testo -->
       <div class="card p-5 rounded-xl space-y-3">
         <div class="flex justify-between items-center">
-          <h2 class="text-xs uppercase tracking-widest text-zinc-400">2. Testo Parlato & B-Roll IA</h2>
-          <button onclick="startDictation()" id="micBtn" class="text-xs underline text-zinc-300 hover:text-white">Detta con voce</button>
+          <h2 class="text-xs uppercase tracking-widest text-zinc-400">2. Seleziona Servizio (Zero Scrittura)</h2>
         </div>
-        <textarea id="scriptInput" rows="3" placeholder="Scrivi o detta cosa dici nel video (es: Oggi facciamo una sfumatura alta con panno caldo finale per un look pulito...)" class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-white"></textarea>
-        <p class="text-xs text-zinc-500">L'IA analizzerà le parole chiave e inserirà automaticamente immagini B-Roll in stile Captions sopra il video.</p>
+        <!-- Pulsanti rapidi -->
+        <div class="grid grid-cols-3 gap-2">
+          <button onclick="setPreset('sfumatura')" class="btn-outline text-[11px] py-2 px-1 rounded-lg">🔥 Sfumatura Alta</button>
+          <button onclick="setPreset('barba')" class="btn-outline text-[11px] py-2 px-1 rounded-lg">✨ Barba & Panno</button>
+          <button onclick="setPreset('skincare')" class="btn-outline text-[11px] py-2 px-1 rounded-lg">🌿 Trattamento Viso</button>
+        </div>
+        <textarea id="scriptInput" rows="2" placeholder="Oppure scrivi cosa dici nel video..." class="w-full bg-black border border-zinc-800 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-white mt-2"></textarea>
       </div>
 
       <!-- 3. Audio Lounge & SFX -->
@@ -147,13 +144,23 @@
     let isPlayingBeat = false;
     let beatTimer = null;
 
-    // Controllo API Key all'avvio
     window.onload = () => {
       updateApiBadge();
       document.getElementById('beatVolume').addEventListener('input', (e) => {
         document.getElementById('volLabel').innerText = e.target.value + '%';
       });
     };
+
+    function setPreset(type) {
+      const field = document.getElementById('scriptInput');
+      if (type === 'sfumatura') {
+        field.value = "Oggi facciamo una sfumatura alta impeccabile con sfumature pulite e dettagli definiti per Barberia Romana.";
+      } else if (type === 'barba') {
+        field.value = "Trattamento barba completo con panno caldo rilassante, oli essenziali e rifinitura a lama libera.";
+      } else if (type === 'skincare') {
+        field.value = "Trattamento viso rigenerante per uomo con detersione profonda e maschera purificante.";
+      }
+    }
 
     function toggleApiModal() {
       const modal = document.getElementById('apiModal');
@@ -199,27 +206,12 @@
       vid.play();
     }
 
-    function startDictation() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) return alert('Dettatura vocale non supportata su questo browser. Scrivi il testo manualmente.');
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'it-IT';
-      document.getElementById('micBtn').innerText = 'Ascolto in corso...';
-      recognition.onresult = (event) => {
-        document.getElementById('scriptInput').value = event.results[0][0].transcript;
-        document.getElementById('micBtn').innerText = 'Detta con voce';
-      };
-      recognition.onerror = () => { document.getElementById('micBtn').innerText = 'Detta con voce'; };
-      recognition.start();
-    }
-
-    // Chiamata reale a Google Gemini per estrarre parole chiave e prompt visivi B-Roll
     async function generateAutoEdit() {
       const apiKey = localStorage.getItem('br_gemini_key');
       const script = document.getElementById('scriptInput').value.trim();
       const log = document.getElementById('aiLog');
 
-      if (!script) return alert('Inserisci o detta prima il testo del video.');
+      if (!script) return alert('Seleziona un preset rapido o scrivi il testo del video.');
       if (!apiKey) {
         toggleApiModal();
         return;
@@ -296,7 +288,6 @@
         void subEl.offsetWidth;
         subEl.classList.add('caption-pop');
 
-        // Controlla se la parola attiva un B-Roll IA
         const cleanWord = currentWord.toLowerCase().replace(/[.,!?]/g, '');
         const match = brollPlan.find(item => cleanWord.includes(item.keyword.toLowerCase()));
 
@@ -315,7 +306,6 @@
       }, 420);
     }
 
-    // Sintetizzatore Chill Lounge Beat
     function toggleLoungeAudio() {
       const btn = document.getElementById('audioPreviewBtn');
       if (isPlayingBeat) {
@@ -336,7 +326,6 @@
         const vol = (document.getElementById('beatVolume').value / 100) * 0.25;
         const now = audioCtx.currentTime;
 
-        // Kick morbido
         if (step % 4 === 0 || step % 8 === 6) {
           const osc = audioCtx.createOscillator();
           const g = audioCtx.createGain();
@@ -348,7 +337,6 @@
           osc.start(now); osc.stop(now + 0.15);
         }
 
-        // Accordo Lounge caldo
         if (step % 8 === 0) {
           const chord = chords[(step / 8) % chords.length];
           chord.forEach(freq => {
